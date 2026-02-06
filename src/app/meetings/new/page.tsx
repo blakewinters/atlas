@@ -1,6 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase-browser';
+import { useAuth } from '@/components/AuthProvider';
+
 interface ProcessedMeeting {
   title: string;
   summary: string;
@@ -15,12 +19,17 @@ interface ProcessedMeeting {
     context?: string;
   }>;
   key_topics: string[];
+  raw_transcript?: string;
+  date?: string;
 }
 
 export default function NewMeetingPage() {
+  const router = useRouter();
+  const { user } = useAuth();
   const [transcript, setTranscript] = useState('');
   const [date, setDate] = useState('');
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [results, setResults] = useState<ProcessedMeeting | null>(null);
   const [editableTitle, setEditableTitle] = useState('');
@@ -56,10 +65,57 @@ export default function NewMeetingPage() {
     }
   };
 
-  const handleSaveMeeting = () => {
-    if (!results) return;
-    alert('Saved!');
-    // TODO: Wire up Supabase to save meeting
+  const handleSaveMeeting = async () => {
+    if (!results || !user) return;
+    setSaving(true);
+    setError('');
+
+    try {
+      // Save meeting to Supabase
+      const { data: meetingData, error: meetingError } = await supabase
+        .from('meetings')
+        .insert({
+          user_id: user.id,
+          title: editableTitle,
+          date: results.date || new Date().toISOString(),
+          raw_transcript: results.raw_transcript || transcript,
+          summary: results.summary,
+          action_items: results.action_items,
+          decisions: results.decisions,
+          key_topics: results.key_topics,
+        })
+        .select()
+        .single();
+
+      if (meetingError) throw meetingError;
+
+      // Create tasks from action items
+      if (results.action_items && results.action_items.length > 0 && meetingData) {
+        const tasksToCreate = results.action_items.map((item) => ({
+          user_id: user.id,
+          meeting_id: meetingData.id,
+          title: item.task,
+          description: item.assignee ? `Assignee: ${item.assignee}` : null,
+          status: 'todo' as const,
+          priority: 'medium' as const,
+          due_date: item.due || null,
+        }));
+
+        const { error: tasksError } = await supabase
+          .from('tasks')
+          .insert(tasksToCreate);
+
+        if (tasksError) throw tasksError;
+      }
+
+      // Redirect to meetings list
+      router.push('/meetings');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save meeting');
+      console.error('Save meeting error:', err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleToggleActionItem = (index: number) => {
@@ -258,9 +314,10 @@ export default function NewMeetingPage() {
             <div className="flex gap-4">
               <button
                 onClick={handleSaveMeeting}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200"
+                disabled={saving}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200"
               >
-                Save Meeting
+                {saving ? 'Saving...' : 'Save Meeting'}
               </button>
               <button
                 onClick={() => {
@@ -269,7 +326,8 @@ export default function NewMeetingPage() {
                   setTranscript('');
                   setEditableTitle('');
                 }}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900 font-semibold py-3 px-4 rounded-lg transition-colors duration-200"
+                disabled={saving}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-300 text-gray-900 font-semibold py-3 px-4 rounded-lg transition-colors duration-200"
               >
                 Process Another
               </button>

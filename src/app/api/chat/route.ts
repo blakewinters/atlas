@@ -3,7 +3,7 @@ import { chat } from "@/lib/claude";
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, context } = await req.json();
+    const { messages, context, model } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json(
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const response = await chat(messages, context);
+    const response = await chat(messages, context, model);
 
     return NextResponse.json({ response });
   } catch (error) {

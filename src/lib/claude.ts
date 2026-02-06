@@ -18,16 +18,24 @@ When given context about meetings or tasks, use that information naturally in co
 
 Current date: ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`;
 
+export type ModelId = "claude-sonnet-4-5-20250929" | "claude-haiku-4-5-20251001";
+
+export const MODELS: { id: ModelId; label: string; description: string }[] = [
+  { id: "claude-sonnet-4-5-20250929", label: "Sonnet 4.5", description: "Most capable — deep thinking, complex analysis" },
+  { id: "claude-haiku-4-5-20251001", label: "Haiku 4.5", description: "Fast & cheap — quick tasks, simple questions" },
+];
+
 export async function chat(
   messages: { role: "user" | "assistant"; content: string }[],
-  context?: string
+  context?: string,
+  model: ModelId = "claude-sonnet-4-5-20250929"
 ) {
   const systemPrompt = context
     ? `${SYSTEM_PROMPT}\n\n--- CONTEXT ---\n${context}`
     : SYSTEM_PROMPT;
 
   const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-5-20250929",
+    model,
     max_tokens: 4096,
     system: systemPrompt,
     messages,

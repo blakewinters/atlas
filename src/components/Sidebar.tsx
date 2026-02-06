@@ -1,10 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from './AuthProvider';
+import { supabase } from '@/lib/supabase-browser';
+import { useState } from 'react';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user } = useAuth();
+  const [signingOut, setSigningOut] = useState(false);
 
   const navItems = [
     { label: 'Dashboard', href: '/' },
@@ -15,6 +21,29 @@ export default function Sidebar() {
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/';
     return pathname.startsWith(href);
+  };
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      await supabase.auth.signOut();
+      router.push('/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
+  // Don't show sidebar on login page
+  if (pathname === '/login') {
+    return null;
+  }
+
+  // Get initials from email
+  const getInitials = (email: string | undefined) => {
+    if (!email) return '?';
+    return email[0].toUpperCase();
   };
 
   return (
@@ -56,15 +85,23 @@ export default function Sidebar() {
 
       {/* User Section */}
       <div className="px-6 py-4 border-t border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold">
-            B
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold flex-shrink-0">
+            {getInitials(user?.email)}
           </div>
-          <div>
-            <p className="text-sm font-medium text-slate-200">Blake</p>
-            <p className="text-xs text-slate-500">BiggerPockets</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-slate-200 truncate">{user?.email || 'User'}</p>
+            <p className="text-xs text-slate-500 truncate">Connected</p>
           </div>
         </div>
+
+        <button
+          onClick={handleSignOut}
+          disabled={signingOut}
+          className="w-full px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {signingOut ? 'Signing out...' : 'Sign out'}
+        </button>
       </div>
     </aside>
   );

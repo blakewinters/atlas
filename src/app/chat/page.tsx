@@ -3,6 +3,12 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 
+type ModelId = "claude-sonnet-4-5-20250929" | "claude-haiku-4-5-20251001";
+const MODELS: { id: ModelId; label: string; short: string }[] = [
+  { id: "claude-sonnet-4-5-20250929", label: "Sonnet 4.5", short: "Sonnet" },
+  { id: "claude-haiku-4-5-20251001", label: "Haiku 4.5", short: "Haiku" },
+];
+
 interface Message {
   role: "user" | "assistant";
   content: string;
@@ -13,6 +19,7 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [model, setModel] = useState<ModelId>("claude-sonnet-4-5-20250929");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -59,6 +66,7 @@ export default function ChatPage() {
         body: JSON.stringify({
           messages: newMessages,
           context: undefined,
+          model,
         }),
       });
 
@@ -119,7 +127,21 @@ export default function ChatPage() {
             </Link>
           </div>
           <h1 className="text-xl font-semibold text-gray-900">Atlas Chat</h1>
-          <div className="w-16" />
+          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+            {MODELS.map((m) => (
+              <button
+                key={m.id}
+                onClick={() => setModel(m.id)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  model === m.id
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {m.short}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
