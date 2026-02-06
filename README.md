@@ -1,0 +1,2 @@
+# atlas
+claude cowork agent
