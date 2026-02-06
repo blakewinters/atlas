@@ -16,6 +16,7 @@ export default function Sidebar() {
     { label: 'Dashboard', href: '/' },
     { label: 'Chat', href: '/chat' },
     { label: 'Meetings', href: '/meetings' },
+    { label: 'Documents', href: '/documents' },
   ];
 
   const isActive = (href: string) => {

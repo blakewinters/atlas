@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Sidebar from '@/components/Sidebar';
 import { AuthProvider } from '@/components/AuthProvider';
 import './globals.css';
 
@@ -17,12 +16,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <AuthProvider>
-          <div className="flex h-screen">
-            <Sidebar />
-            <main className="ml-64 flex-1 overflow-auto">
-              {children}
-            </main>
-          </div>
+          {children}
         </AuthProvider>
       </body>
     </html>

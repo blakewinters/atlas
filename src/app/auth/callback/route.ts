@@ -1,24 +1,40 @@
-import { createClient } from '@supabase/supabase-js';
-import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
-  const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get('code');
+  const { searchParams, origin } = new URL(request.url);
+  const code = searchParams.get('code');
 
   if (code) {
-    const supabase = createClient(
+    // Create redirect response FIRST so we can attach cookies to it
+    const response = NextResponse.redirect(new URL('/', origin));
+
+    const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              response.cookies.set(name, value, options);
+            });
+          },
+        },
+      }
     );
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      // Redirect to dashboard after successful authentication
-      return NextResponse.redirect(new URL('/', requestUrl.origin));
+      return response;
     }
+    console.error('Auth callback error:', error);
   }
 
-  // Redirect to login if there's an error
-  return NextResponse.redirect(new URL('/login?error=auth_failed', requestUrl.origin));
+  return NextResponse.redirect(
+    new URL('/login?error=auth_failed', request.url)
+  );
 }

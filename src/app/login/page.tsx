@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase-browser';
 
@@ -124,23 +123,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Divider */}
-          <div className="relative mt-12 mb-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-600">or</span>
-            </div>
-          </div>
-
-          {/* Continue Without Login */}
-          <Link
-            href="/"
-            className="block w-full text-center text-blue-600 hover:text-blue-700 font-semibold py-3 px-4 transition-colors duration-200"
-          >
-            Continue without login
-          </Link>
         </div>
 
         {/* Footer Text */}
