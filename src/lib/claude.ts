@@ -57,6 +57,8 @@ ${transcript}`,
     ],
   });
 
-  const text = response.content[0].type === "text" ? response.content[0].text : "{}";
+  const raw = response.content[0].type === "text" ? response.content[0].text : "{}";
+  // Strip markdown code fences if Claude wraps the JSON
+  const text = raw.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
   return JSON.parse(text);
 }
